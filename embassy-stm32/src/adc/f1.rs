@@ -120,6 +120,9 @@ impl<'d, T: Instance> Adc<'d, T> {
     }
 
     pub async fn read(&mut self, channel: &mut impl AdcChannel<T>, sample_time: SampleTime) -> u16 {
+        if T::regs().sr().read().eoc().is_complete() {
+            panic!("ADC finished before it started! #1");
+        }
         Self::set_channel_sample_time(channel.channel(), sample_time);
         T::regs().cr1().modify(|reg| {
             reg.set_scan(false);

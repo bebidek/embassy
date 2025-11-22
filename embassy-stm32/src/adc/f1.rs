@@ -84,16 +84,20 @@ impl<'d, T: Instance> Adc<'d, T> {
     }
 
     pub fn enable_vref(&self) -> super::VrefInt {
-        T::regs().cr2().modify(|reg| {
-            reg.set_tsvrefe(true);
-        });
+        if !T::regs().cr2().read().tsvrefe() {
+            T::regs().cr2().modify(|reg| {
+                reg.set_tsvrefe(true);
+            })
+        };
         super::VrefInt {}
     }
 
     pub fn enable_temperature(&self) -> super::Temperature {
-        T::regs().cr2().modify(|reg| {
-            reg.set_tsvrefe(true);
-        });
+        if !T::regs().cr2().read().tsvrefe() {
+            T::regs().cr2().modify(|reg| {
+                reg.set_tsvrefe(true);
+            })
+        };
         super::Temperature {}
     }
 
@@ -120,6 +124,9 @@ impl<'d, T: Instance> Adc<'d, T> {
     }
 
     pub async fn read(&mut self, channel: &mut impl AdcChannel<T>, sample_time: SampleTime) -> u16 {
+        if T::regs().sr().read().eoc() {
+            panic!("Conversion completed before it even started!");
+        }
         Self::set_channel_sample_time(channel.channel(), sample_time);
         T::regs().cr1().modify(|reg| {
             reg.set_scan(false);
